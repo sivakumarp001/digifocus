@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTimer } from '../context/TimerContext';
 import { useAuth } from '../context/AuthContext';
-import { tasksAPI, focusAPI } from '../api';
+import { tasksAPI, focusAPI, authAPI } from '../api';
 import toast from 'react-hot-toast';
 import './FocusTimer.css';
 

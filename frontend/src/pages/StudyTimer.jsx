@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tasksAPI, quizAPI } from '../api/index';
 import toast from 'react-hot-toast';
@@ -8,16 +8,62 @@ export default function StudyTimer() {
     const { taskId } = useParams();
     const navigate = useNavigate();
     const [task, setTask] = useState(null);
-    const [studyDuration, setStudyDuration] = useState(15); // Default 15 minutes
+    const [studyDuration, setStudyDuration] = useState(15);
     const [timeLeft, setTimeLeft] = useState(0);
     const [isStudying, setIsStudying] = useState(false);
     const [studyCompleted, setStudyCompleted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [autoStartQuiz, setAutoStartQuiz] = useState(false);
 
+    const startQuiz = useCallback(async () => {
+        if (!task?.requiredLanguage) {
+            toast.error('Task does not have a quiz topic');
+            return;
+        }
+
+        try {
+            toast.loading('Generating quiz...');
+            const response = await quizAPI.generateTaskQuiz(task._id, { numberOfQuestions: 10 });
+            toast.dismiss();
+            toast.success('Quiz ready! Starting now...');
+            navigate(`/task-quiz/${task._id}/${response.data.data._id}`);
+        } catch {
+            toast.error('Failed to generate quiz');
+        }
+    }, [task, navigate]);
+
     useEffect(() => {
-        loadTask();
-    }, [taskId]);
+        let isMounted = true;
+
+        const fetchTask = async () => {
+            try {
+                const response = await tasksAPI.getAll({ search: '' });
+                const currentTask = response.data.tasks.find(t => t._id === taskId);
+                if (!currentTask) {
+                    if (isMounted) {
+                        toast.error('Task not found');
+                        navigate('/tasks');
+                    }
+                    return;
+                }
+                if (isMounted) {
+                    setTask(currentTask);
+                    setTimeLeft(15 * 60);
+                    setLoading(false);
+                }
+            } catch {
+                if (isMounted) {
+                    toast.error('Failed to load task');
+                    navigate('/tasks');
+                }
+            }
+        };
+
+        fetchTask();
+        return () => {
+            isMounted = false;
+        };
+    }, [taskId, navigate]);
 
     useEffect(() => {
         if (!isStudying || timeLeft <= 0) return;
@@ -43,25 +89,7 @@ export default function StudyTimer() {
             }, 2000); // 2 second delay to show completion message
             return () => clearTimeout(timer);
         }
-    }, [studyCompleted, autoStartQuiz]);
-
-    const loadTask = async () => {
-        try {
-            const response = await tasksAPI.getAll({ search: '' });
-            const currentTask = response.data.tasks.find(t => t._id === taskId);
-            if (!currentTask) {
-                toast.error('Task not found');
-                navigate('/tasks');
-                return;
-            }
-            setTask(currentTask);
-            setTimeLeft(15 * 60); // Default 15 minutes in seconds
-            setLoading(false);
-        } catch (error) {
-            toast.error('Failed to load task');
-            navigate('/tasks');
-        }
-    };
+    }, [studyCompleted, autoStartQuiz, startQuiz]);
 
     const handleStartStudy = () => {
         if (studyDuration < 1 || studyDuration > 120) {
@@ -89,23 +117,6 @@ export default function StudyTimer() {
         setStudyCompleted(false);
         setTimeLeft(studyDuration * 60);
         toast.success('Timer reset');
-    };
-
-    const startQuiz = async () => {
-        if (!task?.requiredLanguage) {
-            toast.error('Task does not have a quiz topic');
-            return;
-        }
-
-        try {
-            toast.loading('Generating quiz...');
-            const response = await quizAPI.generateTaskQuiz(task._id, { numberOfQuestions: 10 });
-            toast.dismiss();
-            toast.success('Quiz ready! Starting now...');
-            navigate(`/task-quiz/${task._id}/${response.data.data._id}`);
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to generate quiz');
-        }
     };
 
     const formatTime = (seconds) => {

@@ -8,7 +8,8 @@ const {
     generateTaskQuiz,
     submitTaskQuiz,
     getTaskQuiz,
-    getTaskQuizStatus
+    getTaskQuizStatus,
+    requestRetest
 } = require('../controllers/quizController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -19,6 +20,7 @@ router.use(protect);
 // Regular quiz routes
 router.post('/generate', generateQuiz);
 router.put('/:id/submit', submitQuiz);
+router.post('/:id/request-retest', requestRetest);
 router.get('/history', getQuizHistory);
 router.get('/:id', getQuiz);
 router.delete('/:id', deleteQuiz);

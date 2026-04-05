@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { analyticsAPI } from '../api';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, ComposedChart, Line } from 'recharts';
 import toast from 'react-hot-toast';
 import './Analytics.css';
 
@@ -112,7 +112,6 @@ export default function Analytics() {
                             <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }} />
                             <Bar dataKey="focus" fill="var(--accent)" radius={[6, 6, 0, 0]} name="Focus hrs" maxBarSize={50} />
                             <Bar dataKey="tasks" fill="var(--success)" radius={[6, 6, 0, 0]} name="Tasks" maxBarSize={50} />
-                            <Bar dataKey="quizzes" fill="var(--warning)" radius={[6, 6, 0, 0]} name="Quizzes" maxBarSize={50} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -120,16 +119,17 @@ export default function Analytics() {
                 {/* Monthly Productivity Overview */}
                 <div className="card">
                     <h3 style={{ marginBottom: 20 }}>📆 Monthly Overview</h3>
-                    <ResponsiveContainer width="100%" height={260}>
-                        <BarChart data={monthly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <ResponsiveContainer width="100%" height={280}>
+                        <ComposedChart data={monthly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                             <XAxis dataKey="week" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <YAxis yAxisId="left" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <YAxis yAxisId="right" orientation="right" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
                             <Tooltip cursor={{ fill: 'var(--bg-card-hover)' }} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }} />
-                            <Bar dataKey="tasks" fill="var(--success)" radius={[6, 6, 0, 0]} name="Tasks" maxBarSize={50} />
-                            <Bar dataKey="quizzes" fill="var(--warning)" radius={[6, 6, 0, 0]} name="Quizzes" maxBarSize={50} />
-                            <Bar dataKey="quizzesPassed" fill="var(--accent)" radius={[6, 6, 0, 0]} name="Passed" maxBarSize={50} />
-                        </BarChart>
+                            <Bar yAxisId="left" dataKey="tasksCompleted" fill="var(--success)" radius={[6, 6, 0, 0]} name="Tasks Completed" maxBarSize={50} />
+                            <Bar yAxisId="left" dataKey="quizzesPassed" fill="var(--accent)" radius={[6, 6, 0, 0]} name="Quizzes Passed" maxBarSize={50} />
+                            <Line yAxisId="right" type="monotone" dataKey="avgScore" stroke="var(--info)" strokeWidth={3} dot={{ r: 4 }} name="Avg Score" />
+                        </ComposedChart>
                     </ResponsiveContainer>
                 </div>
             </div>

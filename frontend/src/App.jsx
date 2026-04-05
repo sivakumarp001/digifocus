@@ -7,13 +7,14 @@ import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import FocusTimer from './pages/FocusTimer';
 import Analytics from './pages/Analytics';
-import Goals from './pages/Goals';
 import Quiz from './pages/Quiz';
 import QuizTest from './pages/QuizTest';
 import QuizResults from './pages/QuizResults';
 import TaskQuizTest from './pages/TaskQuizTest';
 import TaskQuizResults from './pages/TaskQuizResults';
 import StudyTimer from './pages/StudyTimer';
+import AdminPanel from './pages/AdminPanel';
+import TodaysTasks from './pages/TodaysTasks';
 
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
@@ -23,7 +24,14 @@ const PrivateRoute = ({ children }) => {
 
 const PublicRoute = ({ children }) => {
   const { user } = useAuth();
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} replace />;
+  return children;
+};
+
+const AdminRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin') return <Navigate to="/dashboard" replace />;
   return children;
 };
 
@@ -33,13 +41,18 @@ function App() {
       <Routes>
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin/*" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+        
+        {/* Student Routes */}
         <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="tasks" element={<Tasks />} />
+          <Route path="todays-tasks" element={<TodaysTasks />} />
           <Route path="focus" element={<FocusTimer />} />
           <Route path="analytics" element={<Analytics />} />
-          <Route path="goals" element={<Goals />} />
           <Route path="quiz" element={<Quiz />} />
           <Route path="quiz/:quizId/test" element={<QuizTest />} />
           <Route path="quiz/:quizId/results" element={<QuizResults />} />

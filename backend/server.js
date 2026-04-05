@@ -22,6 +22,9 @@ app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/goals', require('./routes/goalRoutes'));
 app.use('/api/quiz', require('./routes/quizRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/levels', require('./routes/levelRoutes'));
+app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
+app.use('/api/daily-tasks', require('./routes/dailyTaskRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK', time: new Date() }));

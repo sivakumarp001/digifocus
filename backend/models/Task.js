@@ -7,6 +7,9 @@ const taskSchema = new mongoose.Schema({
     priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
     category: { type: String, enum: ['study', 'project', 'personal', 'other'], default: 'study' },
     dueDate: { type: Date },
+    startTime: { type: Date, default: null },
+    endTime: { type: Date, default: null },
+    plannedDurationMinutes: { type: Number, default: 0 },
     completed: { type: Boolean, default: false },
     completedAt: { type: Date, default: null },
     tags: [{ type: String }],
@@ -19,9 +22,17 @@ const taskSchema = new mongoose.Schema({
     quizCompleted: { type: Boolean, default: false },
     quizPassedAt: { type: Date, default: null },
     linkedQuizId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quiz', default: null },
-    quizRequired: { type: Boolean, default: false }, // True if quiz must be completed before task can be marked complete
+    quizRequired: { type: Boolean, default: false },
     taskQuizStarted: { type: Boolean, default: false },
     taskQuizStartedAt: { type: Date, default: null },
+    taskQuizAvailableAt: { type: Date, default: null },
+    assignedByStaff: { type: Boolean, default: false },
+    assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    pointsAwarded: { type: Number, default: 20 },
+    pointsPenalty: { type: Number, default: 10 },
+    reTestRequested: { type: Boolean, default: false },
+    reTestRequestId: { type: mongoose.Schema.Types.ObjectId, ref: 'ReTestRequest', default: null },
+    reTestApprovedCount: { type: Number, default: 0 },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Task', taskSchema);

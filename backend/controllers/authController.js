@@ -35,26 +35,34 @@ const registerUser = async (req, res, next) => {
 // @route POST /api/auth/login
 const loginUser = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, role } = req.body;
         const user = await User.findOne({ email });
-        if (user && (await user.matchPassword(password))) {
-            await updateStreak(user);
-            res.json({
-                success: true,
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                streak: user.streak,
-                totalFocusMinutes: user.totalFocusMinutes,
-                productivityScore: user.productivityScore,
-                preferences: user.preferences,
-                token: generateToken(user._id),
-            });
-        } else {
+        
+        // Validate user exists and password matches
+        if (!user || !(await user.matchPassword(password))) {
             res.status(401);
             throw new Error('Invalid email or password');
         }
+
+        // Validate role matches (if role is provided)
+        if (role && user.role !== role) {
+            res.status(403);
+            throw new Error(`This account is not registered as ${role}. Please login as ${user.role}.`);
+        }
+
+        await updateStreak(user);
+        res.json({
+            success: true,
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            streak: user.streak,
+            totalFocusMinutes: user.totalFocusMinutes,
+            productivityScore: user.productivityScore,
+            preferences: user.preferences,
+            token: generateToken(user._id),
+        });
     } catch (error) {
         next(error);
     }

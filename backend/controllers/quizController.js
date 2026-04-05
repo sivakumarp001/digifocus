@@ -1,198 +1,326 @@
 const Quiz = require('../models/Quiz');
 const User = require('../models/User');
 const Task = require('../models/Task');
+const ReTestRequest = require('../models/ReTestRequest');
 const asyncHandler = require('express-async-handler');
 
-// Sample questions database by subject
+const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+};
+
 const questionsDatabase = {
     mathematics: [
-        { question: 'What is 15 + 27?', options: ['42', '40', '41', '43'], correctAnswer: 0 },
-        { question: 'What is the square root of 144?', options: ['12', '10', '14', '13'], correctAnswer: 0 },
-        { question: 'What is 25 × 4?', options: ['100', '99', '101', '102'], correctAnswer: 0 },
-        { question: 'What is 100 ÷ 5?', options: ['20', '19', '21', '25'], correctAnswer: 0 },
-        { question: 'What is 7³?', options: ['343', '340', '344', '342'], correctAnswer: 0 },
-        { question: 'What is the value of π (approximately)?', options: ['3.14', '3.15', '3.12', '3.16'], correctAnswer: 0 },
-        { question: 'What is 12² - 5²?', options: ['119', '120', '118', '117'], correctAnswer: 0 },
-        { question: 'What is the sum of angles in a triangle?', options: ['180°', '360°', '90°', '270°'], correctAnswer: 0 },
-        { question: 'What is 50% of 200?', options: ['100', '99', '101', '102'], correctAnswer: 0 },
-        { question: 'What is the LCM of 12 and 18?', options: ['36', '35', '37', '38'], correctAnswer: 0 },
+        { question: 'What is 15 + 27?', options: ['40', '42', '41', '43'], correctAnswer: 1 },
+        { question: 'What is the square root of 144?', options: ['10', '12', '14', '13'], correctAnswer: 1 },
+        { question: 'What is 25 multiplied by 4?', options: ['99', '100', '101', '102'], correctAnswer: 1 },
+        { question: 'What is 100 divided by 5?', options: ['19', '20', '21', '25'], correctAnswer: 1 },
+        { question: 'What is 50% of 200?', options: ['90', '100', '110', '120'], correctAnswer: 1 },
+        { question: 'What is the LCM of 12 and 18?', options: ['24', '30', '36', '42'], correctAnswer: 2 },
     ],
     science: [
-        { question: 'What is the chemical symbol for Gold?', options: ['Au', 'Go', 'Gd', 'Gn'], correctAnswer: 0 },
-        { question: 'What is the speed of light?', options: ['299,792 km/s', '300,000 km/s', '298,000 km/s', '301,000 km/s'], correctAnswer: 0 },
-        { question: 'How many planets are in our solar system?', options: ['8', '9', '7', '10'], correctAnswer: 0 },
-        { question: 'What is the powerhouse of the cell?', options: ['Mitochondria', 'Nucleus', 'Ribosome', 'Lysosome'], correctAnswer: 0 },
-        { question: 'What is the chemical formula of water?', options: ['H₂O', 'H₂O₂', 'HO', 'H₃O'], correctAnswer: 0 },
-        { question: 'What is the hardest natural substance?', options: ['Diamond', 'Quartz', 'Ruby', 'Sapphire'], correctAnswer: 0 },
-        { question: 'What is the process by which plants make their own food?', options: ['Photosynthesis', 'Respiration', 'Fermentation', 'Digestion'], correctAnswer: 0 },
-        { question: 'How many bones are in the adult human body?', options: ['206', '207', '205', '208'], correctAnswer: 0 },
-        { question: 'What is the most abundant gas in our atmosphere?', options: ['Nitrogen', 'Oxygen', 'Argon', 'Carbon Dioxide'], correctAnswer: 0 },
-        { question: 'What is the average body temperature of humans?', options: ['37°C', '36°C', '38°C', '39°C'], correctAnswer: 0 },
+        { question: 'What is the chemical symbol for Gold?', options: ['Go', 'Au', 'Ag', 'Gd'], correctAnswer: 1 },
+        { question: 'What is the powerhouse of the cell?', options: ['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi body'], correctAnswer: 1 },
+        { question: 'How many planets are in the solar system?', options: ['7', '8', '9', '10'], correctAnswer: 1 },
+        { question: 'What gas do plants absorb?', options: ['Nitrogen', 'Oxygen', 'Carbon Dioxide', 'Hydrogen'], correctAnswer: 2 },
+        { question: 'What is H2O?', options: ['Hydrogen', 'Oxygen', 'Water', 'Salt'], correctAnswer: 2 },
+        { question: 'What is the pH of pure water?', options: ['6', '7', '8', '9'], correctAnswer: 1 },
     ],
     history: [
-        { question: 'In which year did World War II end?', options: ['1945', '1944', '1946', '1947'], correctAnswer: 0 },
-        { question: 'Who was the first President of the United States?', options: ['George Washington', 'Thomas Jefferson', 'Benjamin Franklin', 'John Adams'], correctAnswer: 0 },
-        { question: 'In which year did the Titanic sink?', options: ['1912', '1911', '1913', '1914'], correctAnswer: 0 },
-        { question: 'Who wrote the Declaration of Independence?', options: ['Thomas Jefferson', 'Benjamin Franklin', 'John Adams', 'George Washington'], correctAnswer: 0 },
-        { question: 'In which year did the Indian independence happen?', options: ['1947', '1948', '1946', '1945'], correctAnswer: 0 },
-        { question: 'Who was the first President of India?', options: ['Dr. Rajendra Prasad', 'Jawaharlal Nehru', 'Sardar Vallabhbhai Patel', 'Mahatma Gandhi'], correctAnswer: 0 },
-        { question: 'In which city was the Statue of Liberty built?', options: ['New York', 'Boston', 'Philadelphia', 'Washington DC'], correctAnswer: 0 },
-        { question: 'Who was the first man to walk on the moon?', options: ['Neil Armstrong', 'Buzz Aldrin', 'John Glenn', 'Alan Shepard'], correctAnswer: 0 },
-        { question: 'In which year did the Magna Carta sign?', options: ['1215', '1216', '1214', '1217'], correctAnswer: 0 },
-        { question: 'Who was the longest reigning British monarch?', options: ['Queen Victoria', 'King George III', 'Elizabeth II', 'George V'], correctAnswer: 0 },
+        { question: 'In which year did World War II end?', options: ['1944', '1945', '1946', '1947'], correctAnswer: 1 },
+        { question: 'Who was the first President of the United States?', options: ['John Adams', 'George Washington', 'Thomas Jefferson', 'Abraham Lincoln'], correctAnswer: 1 },
+        { question: 'When did India gain independence?', options: ['1945', '1946', '1947', '1948'], correctAnswer: 2 },
+        { question: 'Who invented the printing press?', options: ['Newton', 'Galileo', 'Gutenberg', 'Edison'], correctAnswer: 2 },
+        { question: 'Which wall fell in 1989?', options: ['Great Wall', 'Berlin Wall', 'Hadrian Wall', 'Wailing Wall'], correctAnswer: 1 },
+        { question: 'Who led the Mauryan Empire?', options: ['Ashoka', 'Chandragupta Maurya', 'Harsha', 'Akbar'], correctAnswer: 1 },
     ],
     english: [
-        { question: 'What is the plural of "child"?', options: ['children', 'childs', 'childes', 'childss'], correctAnswer: 0 },
-        { question: 'Who wrote "Romeo and Juliet"?', options: ['William Shakespeare', 'Jane Austen', 'Charles Dickens', 'Mark Twain'], correctAnswer: 0 },
-        { question: 'What does "ephemeral" mean?', options: ['Lasting a short time', 'Very large', 'Dark and gloomy', 'Bitter or harsh'], correctAnswer: 0 },
-        { question: 'Which is a noun?', options: ['happiness', 'run', 'beautiful', 'quickly'], correctAnswer: 0 },
-        { question: 'What is the opposite of "antonym"?', options: ['Synonym', 'Homonym', 'Metonym', 'Acronym'], correctAnswer: 0 },
-        { question: 'How many vowels are in the English alphabet?', options: ['5', '4', '6', '7'], correctAnswer: 0 },
-        { question: 'Who wrote "1984"?', options: ['George Orwell', 'Aldous Huxley', 'Ray Bradbury', 'Isaac Asimov'], correctAnswer: 0 },
-        { question: 'What is the correct spelling?', options: ['necessary', 'neccessary', 'necesary', 'neccesssary'], correctAnswer: 0 },
-        { question: 'What does "serendipity" mean?', options: ['Finding good things by chance', 'Bad luck', 'Planning carefully', 'Being lost'], correctAnswer: 0 },
-        { question: 'Which sentence is grammatically correct?', options: ['She goes to the market', 'She go to the market', 'She going to the market', 'She goes to market'], correctAnswer: 0 },
+        { question: 'What is the plural of child?', options: ['Childs', 'Childes', 'Children', 'Childrens'], correctAnswer: 2 },
+        { question: 'Who wrote Romeo and Juliet?', options: ['Shakespeare', 'Austen', 'Dickens', 'Twain'], correctAnswer: 0 },
+        { question: 'What does candid mean?', options: ['Bright', 'Honest', 'Loud', 'Harsh'], correctAnswer: 1 },
+        { question: 'Which word is a noun?', options: ['Run', 'Beautiful', 'Happiness', 'Quickly'], correctAnswer: 2 },
+        { question: 'What is an antonym of happy?', options: ['Joyful', 'Sad', 'Excited', 'Glad'], correctAnswer: 1 },
+        { question: 'What is a metaphor?', options: ['A direct comparison', 'A question', 'A command', 'A rhyme'], correctAnswer: 0 },
     ],
     aptitude: [
-        { question: 'If A can complete a work in 10 days and B in 15 days, how many days will they take together?', options: ['6 days', '5 days', '7 days', '8 days'], correctAnswer: 0 },
-        { question: 'What is 20% of 150?', options: ['30', '25', '35', '40'], correctAnswer: 0 },
-        { question: 'If a train travels 60 km/h, how far will it travel in 2.5 hours?', options: ['150 km', '140 km', '160 km', '170 km'], correctAnswer: 0 },
-        { question: 'What is the next number in the series: 2, 4, 8, 16, ?', options: ['32', '30', '24', '28'], correctAnswer: 0 },
-        { question: 'If the cost of 5 apples is Rs. 50, what is the cost of 8 apples?', options: ['Rs. 80', 'Rs. 75', 'Rs. 85', 'Rs. 90'], correctAnswer: 0 },
-        { question: 'What is the average of 10, 20, 30, 40, 50?', options: ['30', '25', '35', '40'], correctAnswer: 0 },
-        { question: 'If a number is increased by 25%, what will be the new number if original is 100?', options: ['125', '120', '130', '140'], correctAnswer: 0 },
-        { question: 'A clock shows 3:15. What is the angle between hour and minute hand?', options: ['7.5°', '10°', '5°', '12.5°'], correctAnswer: 0 },
-        { question: 'What is the LCM of 8 and 12?', options: ['24', '20', '28', '30'], correctAnswer: 0 },
-        { question: 'If x + 5 = 12, what is the value of x?', options: ['7', '6', '8', '9'], correctAnswer: 0 },
+        { question: 'What is 20% of 150?', options: ['20', '25', '30', '35'], correctAnswer: 2 },
+        { question: 'What is the next number: 2, 4, 8, 16?', options: ['18', '24', '30', '32'], correctAnswer: 3 },
+        { question: 'If x + 5 = 12, what is x?', options: ['5', '6', '7', '8'], correctAnswer: 2 },
+        { question: 'What is the average of 10, 20, 30?', options: ['15', '20', '25', '30'], correctAnswer: 1 },
+        { question: 'If a train moves at 60 km/h for 2 hours, what distance is covered?', options: ['100', '110', '120', '130'], correctAnswer: 2 },
+        { question: 'Simplify the ratio 45:100.', options: ['9:20', '5:11', '4:9', '3:7'], correctAnswer: 0 },
     ],
     java: [
-        { question: 'Which keyword is used to create a class in Java?', options: ['class', 'Class', 'CLASS', 'java'], correctAnswer: 0 },
-        { question: 'What is the default value of an int variable in Java?', options: ['0', '1', 'null', 'undefined'], correctAnswer: 0 },
-        { question: 'Which of the following is not a primitive data type in Java?', options: ['String', 'int', 'boolean', 'char'], correctAnswer: 0 },
-        { question: 'What does JVM stand for?', options: ['Java Virtual Machine', 'Java Value Method', 'Java Variable Member', 'Java Vector Machine'], correctAnswer: 0 },
-        { question: 'Which method is used to start a thread in Java?', options: ['start()', 'run()', 'execute()', 'begin()'], correctAnswer: 0 },
-        { question: 'What is the size of an int variable in Java?', options: ['4 bytes', '2 bytes', '8 bytes', '1 byte'], correctAnswer: 0 },
-        { question: 'Which exception is thrown when array index is out of bounds?', options: ['ArrayIndexOutOfBoundsException', 'NullPointerException', 'IndexException', 'ArrayException'], correctAnswer: 0 },
-        { question: 'What is the keyword to prevent method overriding in Java?', options: ['final', 'static', 'private', 'protected'], correctAnswer: 0 },
-        { question: 'Which package is imported by default in Java?', options: ['java.lang', 'java.util', 'java.io', 'java.awt'], correctAnswer: 0 },
-        { question: 'What does API stand for?', options: ['Application Programming Interface', 'Advanced Programming Interface', 'Application Programming Instruction', 'Advanced Program Interface'], correctAnswer: 0 },
+        { question: 'Which keyword creates a class in Java?', options: ['Class', 'class', 'CLASS', 'java'], correctAnswer: 1 },
+        { question: 'What is the default int value in Java?', options: ['0', '1', 'null', 'undefined'], correctAnswer: 0 },
+        { question: 'Which is not a primitive type?', options: ['int', 'boolean', 'String', 'char'], correctAnswer: 2 },
+        { question: 'What does JVM stand for?', options: ['Java Variable Machine', 'Java Virtual Machine', 'Java Verified Method', 'Java Visual Mode'], correctAnswer: 1 },
+        { question: 'Which method starts a thread?', options: ['run()', 'execute()', 'start()', 'begin()'], correctAnswer: 2 },
+        { question: 'Which package is imported by default?', options: ['java.io', 'java.util', 'java.lang', 'java.net'], correctAnswer: 2 },
     ],
     python: [
-        { question: 'What is the extension of a Python file?', options: ['.py', '.python', '.p', '.pyt'], correctAnswer: 0 },
-        { question: 'Which keyword is used to create a function in Python?', options: ['def', 'function', 'func', 'define'], correctAnswer: 0 },
-        { question: 'What is the output of print(2 ** 3)?', options: ['8', '6', '5', '9'], correctAnswer: 0 },
-        { question: 'Which data type is immutable in Python?', options: ['tuple', 'list', 'set', 'dictionary'], correctAnswer: 0 },
-        { question: 'What is the correct way to create a list in Python?', options: ['[1, 2, 3]', '{1, 2, 3}', '(1, 2, 3)', 'list(1, 2, 3)'], correctAnswer: 0 },
-        { question: 'Which library is used for numerical computing in Python?', options: ['NumPy', 'Pandas', 'Matplotlib', 'Scikit-learn'], correctAnswer: 0 },
-        { question: 'What does len() function do in Python?', options: ['Returns the length of an object', 'Returns the first element', 'Returns the last element', 'Converts to lowercase'], correctAnswer: 0 },
-        { question: 'What is the output of "hello"[1]?', options: ['e', 'h', 'l', 'o'], correctAnswer: 0 },
-        { question: 'Which loop is used in Python when the number of iterations is not known?', options: ['while', 'for', 'do-while', 'foreach'], correctAnswer: 0 },
-        { question: 'What does IDE stand for in programming?', options: ['Integrated Development Environment', 'Internal Development Engine', 'Integrated Design Environment', 'Internal Design Engine'], correctAnswer: 0 },
+        { question: 'What is the extension of a Python file?', options: ['.python', '.py', '.pt', '.px'], correctAnswer: 1 },
+        { question: 'Which keyword defines a function?', options: ['function', 'func', 'def', 'define'], correctAnswer: 2 },
+        { question: 'What is 2 ** 3 in Python?', options: ['5', '6', '8', '9'], correctAnswer: 2 },
+        { question: 'Which data type is immutable?', options: ['list', 'tuple', 'dict', 'set'], correctAnswer: 1 },
+        { question: 'Which loop runs while a condition is true?', options: ['for', 'loop', 'while', 'repeat'], correctAnswer: 2 },
+        { question: 'What does len() return?', options: ['Type', 'Length', 'Index', 'Boolean'], correctAnswer: 1 },
     ],
     c: [
-        { question: 'Who invented the C programming language?', options: ['Dennis Ritchie', 'Bjarne Stroustrup', 'Guido van Rossum', 'James Gosling'], correctAnswer: 0 },
-        { question: 'What is the file extension of a C program?', options: ['.c', '.cpp', '.cc', '.h'], correctAnswer: 0 },
-        { question: 'Which header file is used for input/output in C?', options: ['stdio.h', 'stdlib.h', 'string.h', 'math.h'], correctAnswer: 0 },
-        { question: 'What is the output of sizeof(int) in most systems?', options: ['4 bytes', '2 bytes', '8 bytes', '1 byte'], correctAnswer: 0 },
-        { question: 'What does NULL represent in C?', options: ['Zero/absence of value', 'Empty string', 'Zero integer', 'Whitespace'], correctAnswer: 0 },
-        { question: 'Which function is used to allocate memory in C?', options: ['malloc()', 'alloc()', 'new()', 'create()'], correctAnswer: 0 },
-        { question: 'What is a pointer in C?', options: ['Variable that stores memory address', 'A variable that stores value', 'A function name', 'A data type'], correctAnswer: 0 },
-        { question: 'Which operator is used to access value at the address?', options: ['*', '&', '->', '.'], correctAnswer: 0 },
-        { question: 'What is the output of printf("%d", 10 / 3)?', options: ['3', '3.33', '4', '3.0'], correctAnswer: 0 },
-        { question: 'How many bytes does a char take in C?', options: ['1 byte', '2 bytes', '4 bytes', '8 bytes'], correctAnswer: 0 },
+        { question: 'Who created C?', options: ['Bjarne Stroustrup', 'Dennis Ritchie', 'James Gosling', 'Guido van Rossum'], correctAnswer: 1 },
+        { question: 'What is the file extension of a C source file?', options: ['.cpp', '.java', '.py', '.c'], correctAnswer: 3 },
+        { question: 'Which header is used for standard input/output?', options: ['stdlib.h', 'stdio.h', 'string.h', 'math.h'], correctAnswer: 1 },
+        { question: 'Which symbol is used for pointers?', options: ['&', '*', '#', '@'], correctAnswer: 1 },
+        { question: 'What does malloc do?', options: ['Frees memory', 'Allocates memory', 'Copies memory', 'Clears memory'], correctAnswer: 1 },
+        { question: 'Which loop checks condition before running?', options: ['do-while', 'while', 'repeat', 'each'], correctAnswer: 1 },
+    ],
+    'c++': [
+        { question: 'Who created C++?', options: ['Dennis Ritchie', 'Bjarne Stroustrup', 'James Gosling', 'Guido van Rossum'], correctAnswer: 1 },
+        { question: 'Which extension is used for C++ source files?', options: ['.c', '.cpp', '.hpp', '.ccp'], correctAnswer: 1 },
+        { question: 'Which concept allows multiple functions with the same name?', options: ['Encapsulation', 'Polymorphism', 'Abstraction', 'Inheritance'], correctAnswer: 1 },
+        { question: 'Which keyword is used to create an object instance?', options: ['malloc', 'new', 'create', 'alloc'], correctAnswer: 1 },
+        { question: 'Which header is used for input/output streams?', options: ['<stdio.h>', '<iostream>', '<stream.h>', '<io.h>'], correctAnswer: 1 },
+        { question: 'Which operator is overloaded for object assignment by default?', options: ['+', '=', '==', '->'], correctAnswer: 1 },
+    ],
+    react: [
+        { question: 'What is React primarily used for?', options: ['Backend APIs', 'Database design', 'Building UI components', 'Testing'], correctAnswer: 2 },
+        { question: 'Which hook replaces lifecycle methods like componentDidMount?', options: ['useContext', 'useEffect', 'useMemo', 'useRef'], correctAnswer: 1 },
+        { question: 'What is JSX?', options: ['JSON in XML', 'A CSS preprocessor', 'JavaScript + XML syntax', 'A testing library'], correctAnswer: 2 },
+        { question: 'How do you pass data to a child component?', options: ['contexts', 'props', 'states', 'globals'], correctAnswer: 1 },
+        { question: 'Which command creates a new Vite React app?', options: ['npm create vite@latest', 'npx react-app init', 'npm init react', 'npx create-react-app'], correctAnswer: 0 },
+        { question: 'What should every list item have in React?', options: ['id attribute', 'name prop', 'key prop', 'index number'], correctAnswer: 2 },
     ],
     html: [
-        { question: 'What does HTML stand for?', options: ['HyperText Markup Language', 'Home Tool Markup Language', 'Hyperlinks and Text Markup Language', 'Hyper Tool Markup Language'], correctAnswer: 0 },
-        { question: 'Which tag is used to define a paragraph?', options: ['<p>', '<paragraph>', '<para>', '<pgh>'], correctAnswer: 0 },
-        { question: 'What is the correct way to comment in HTML?', options: ['<!-- comment -->', '// comment', '/* comment */', '# comment'], correctAnswer: 0 },
-        { question: 'Which tag is used for the largest heading?', options: ['<h1>', '<h6>', '<heading>', '<title>'], correctAnswer: 0 },
-        { question: 'What is the correct tag for a line break?', options: ['<br>', '<br/>', '<break>', '</br>'], correctAnswer: 0 },
-        { question: 'Which attribute is used to define inline styles?', options: ['style', 'class', 'id', 'css'], correctAnswer: 0 },
-        { question: 'What does the <meta> tag define?', options: ['Metadata about HTML document', 'A metadata container', 'Meta information', 'Metadata tag'], correctAnswer: 0 },
-        { question: 'How do you insert an image in HTML?', options: ['<img src="image.jpg">', '<image src="image.jpg">', '<img href="image.jpg">', '<picture src="image.jpg">'], correctAnswer: 0 },
-        { question: 'Which tag is used to define a list item?', options: ['<li>', '<item>', '<list>', '<listitem>'], correctAnswer: 0 },
-        { question: 'What does <br> tag do?', options: ['Inserts a line break', 'Breaks the page', 'Closes a tag', 'Bold text'], correctAnswer: 0 },
+        { question: 'What does HTML stand for?', options: ['HyperText Markup Language', 'HighText Markdown Language', 'HyperText Machine Language', 'Home Tool Markup Language'], correctAnswer: 0 },
+        { question: 'Which tag defines a paragraph?', options: ['<paragraph>', '<p>', '<para>', '<text>'], correctAnswer: 1 },
+        { question: 'How do you add an image?', options: ['<image>', '<img>', '<src>', '<picture>'], correctAnswer: 1 },
+        { question: 'Which tag creates a hyperlink?', options: ['<a>', '<link>', '<href>', '<url>'], correctAnswer: 0 },
+        { question: 'Which tag creates a line break?', options: ['<lb>', '<br>', '<break>', '<newline>'], correctAnswer: 1 },
+        { question: 'Where is metadata placed?', options: ['<footer>', '<body>', '<header>', '<head>'], correctAnswer: 3 },
     ],
     css: [
-        { question: 'What does CSS stand for?', options: ['Cascading Style Sheets', 'Computer Style Sheets', 'Colorful Style Sheets', 'Creative Style Sheets'], correctAnswer: 0 },
-        { question: 'Which symbol is used to select an element with a specific id in CSS?', options: ['#', '.', '*', '$'], correctAnswer: 0 },
-        { question: 'How do you select an element with a specific class in CSS?', options: ['.classname', '#classname', '*classname', ':classname'], correctAnswer: 0 },
-        { question: 'What property is used to change the text color?', options: ['color', 'text-color', 'font-color', 'text'], correctAnswer: 0 },
-        { question: 'Which property controls the spacing between elements?', options: ['margin', 'padding', 'spacing', 'gap'], correctAnswer: 0 },
-        { question: 'What is the default value of the position property?', options: ['static', 'relative', 'absolute', 'fixed'], correctAnswer: 0 },
-        { question: 'Which property is used to make text bold?', options: ['font-weight', 'bold', 'text-weight', 'font-style'], correctAnswer: 0 },
-        { question: 'What does the z-index property control?', options: ['Stacking order of elements', 'Zoom level', 'Size of elements', 'Position on page'], correctAnswer: 0 },
-        { question: 'Which property creates space inside an element?', options: ['padding', 'margin', 'border', 'spacing'], correctAnswer: 0 },
-        { question: 'What is the syntax for an id selector in CSS?', options: ['#idname', '.idname', '*idname', '@idname'], correctAnswer: 0 },
+        { question: 'What does CSS stand for?', options: ['Computer Style Sheets', 'Cascading Style Sheets', 'Creative Style Sheets', 'Colorful Style Sheets'], correctAnswer: 1 },
+        { question: 'How do you select an element by id?', options: ['.id', '#id', '*id', ':id'], correctAnswer: 1 },
+        { question: 'Which property changes text color?', options: ['font-color', 'text-color', 'color', 'foreground'], correctAnswer: 2 },
+        { question: 'Which property adds space inside an element?', options: ['margin', 'padding', 'gap', 'border'], correctAnswer: 1 },
+        { question: 'Which property controls font size?', options: ['font-style', 'font-size', 'text-size', 'size'], correctAnswer: 1 },
+        { question: 'How do you select a class?', options: ['#class', '.class', '*class', ':class'], correctAnswer: 1 },
     ],
 };
 
-// Function to get questions for a subject
-const getQuestionsForSubject = (subjectInput) => {
+const getQuestionsForSubject = (subjectInput = '') => {
     const subjectLower = subjectInput.toLowerCase();
-    
-    // Check for exact match
+
     if (questionsDatabase[subjectLower]) {
         return questionsDatabase[subjectLower];
     }
-    
-    // Check for partial match (e.g., "Java" matches "java")
-    const matchedKey = Object.keys(questionsDatabase).find(key => 
+
+    const matchedKey = Object.keys(questionsDatabase).find((key) =>
         key.includes(subjectLower) || subjectLower.includes(key)
     );
-    
-    if (matchedKey) {
-        return questionsDatabase[matchedKey];
-    }
-    
-    // If no match found, return general questions as fallback
-    return questionsDatabase.general || [];
+
+    return matchedKey ? questionsDatabase[matchedKey] : questionsDatabase.mathematics;
 };
 
-// @desc    Generate quiz questions from a subject
-// @route   POST /api/quiz/generate
-// @access  Private
+const buildQuestionSet = (subject, requestedCount = 50) => {
+    const availableQuestions = getQuestionsForSubject(subject);
+    if (!availableQuestions.length) {
+        return [];
+    }
+
+    const minimumCount = Math.max(50, Number(requestedCount) || 50);
+    const selected = [];
+
+    while (selected.length < minimumCount) {
+        const round = shuffleArray(availableQuestions);
+        round.forEach((question) => {
+            if (selected.length >= minimumCount) return;
+            selected.push({ ...question });
+        });
+    }
+
+    return selected.slice(0, minimumCount);
+};
+
+const calculatePointsDelta = ({ isPassed, isPractice, task }) => {
+    if (isPractice) {
+        return 0;
+    }
+
+    if (isPassed) {
+        return task?.pointsAwarded ?? 20;
+    }
+
+    return -Math.abs(task?.pointsPenalty ?? 10);
+};
+
+const appendScoreHistory = async ({ userId, quiz, task, isPractice, pointsDelta }) => {
+    await User.findByIdAndUpdate(userId, {
+        $inc: { cumulativePoints: pointsDelta },
+        $push: {
+            scoreHistory: {
+                quizId: quiz._id,
+                taskId: task?._id || null,
+                subject: quiz.subject,
+                score: quiz.score,
+                totalQuestions: quiz.totalQuestions,
+                percentage: quiz.percentage,
+                passed: quiz.isPassed,
+                pointsDelta,
+                isPractice,
+                takenAt: quiz.completedAt || new Date(),
+            },
+        },
+    });
+};
+
+const createRetestRequestForQuiz = async ({ quiz, task, reason }) => {
+    const existingPendingRequest = await ReTestRequest.findOne({
+        quizId: quiz._id,
+        studentId: quiz.userId,
+        status: 'pending',
+    });
+
+    if (existingPendingRequest) {
+        await Quiz.findByIdAndUpdate(quiz._id, {
+            reTestRequested: true,
+            reTestRequestId: existingPendingRequest._id,
+        });
+
+        if (task?._id) {
+            await Task.findByIdAndUpdate(task._id, {
+                reTestRequested: true,
+                reTestRequestId: existingPendingRequest._id,
+            });
+        }
+
+        return existingPendingRequest;
+    }
+
+    const retestRequest = await ReTestRequest.create({
+        studentId: quiz.userId,
+        quizId: quiz._id,
+        taskId: task?._id || quiz.linkedTaskId || null,
+        score: quiz.score,
+        percentage: quiz.percentage,
+        reason,
+    });
+
+    await Quiz.findByIdAndUpdate(quiz._id, {
+        reTestRequested: true,
+        reTestRequestId: retestRequest._id,
+    });
+
+    if (task?._id) {
+        await Task.findByIdAndUpdate(task._id, {
+            reTestRequested: true,
+            reTestRequestId: retestRequest._id,
+        });
+    }
+
+    return retestRequest;
+};
+
+const createRetakeQuizFromOriginal = async (originalQuiz) => Quiz.create({
+    userId: originalQuiz.userId,
+    linkedTaskId: originalQuiz.linkedTaskId,
+    subject: originalQuiz.subject,
+    title: `${originalQuiz.title} Retest`,
+    questions: originalQuiz.questions,
+    totalQuestions: originalQuiz.totalQuestions,
+    timeLimit: originalQuiz.timeLimit,
+    quizType: originalQuiz.quizType,
+    assignedBy: originalQuiz.assignedBy,
+    availableAt: new Date(),
+    isPassed: false,
+    answers: [],
+    score: 0,
+    percentage: 0,
+    pointsDelta: 0,
+    antiCheatWarnings: 0,
+    fullscreenViolations: 0,
+    tabSwitchViolations: 0,
+    status: 'in-progress',
+    startedAt: new Date(),
+    completedAt: null,
+    reTestRequested: false,
+    reTestRequestId: null,
+    isRetake: true,
+    originalQuizId: originalQuiz._id,
+});
+
+const ensureApprovedRetakeQuizForTask = async (task) => {
+    if (!task?.reTestRequestId) {
+        return task;
+    }
+
+    const request = await ReTestRequest.findById(task.reTestRequestId);
+    if (!request || request.status !== 'approved') {
+        return task;
+    }
+
+    const currentLinkedQuiz = task.linkedQuizId ? await Quiz.findById(task.linkedQuizId) : null;
+    if (currentLinkedQuiz && currentLinkedQuiz.status !== 'completed') {
+        return task;
+    }
+
+    const originalQuiz = await Quiz.findById(request.quizId);
+    if (!originalQuiz) {
+        return task;
+    }
+
+    const retakeQuiz = await createRetakeQuizFromOriginal(originalQuiz);
+
+    return Task.findByIdAndUpdate(
+        task._id,
+        {
+            linkedQuizId: retakeQuiz._id,
+            quizCompleted: false,
+            quizPassedAt: null,
+            completed: false,
+            completedAt: null,
+            reTestRequested: false,
+            reTestRequestId: null,
+            $inc: { reTestApprovedCount: 1 },
+        },
+        { new: true },
+    );
+};
+
 exports.generateQuiz = asyncHandler(async (req, res) => {
-    const { subject, numberOfQuestions = 10 } = req.body;
+    const { subject, numberOfQuestions = 50 } = req.body;
     const userId = req.user._id;
 
     if (!subject || !subject.trim()) {
         return res.status(400).json({ message: 'Subject is required' });
     }
 
-    const availableQuestions = getQuestionsForSubject(subject);
-
-    if (availableQuestions.length === 0) {
+    const selectedQuestions = buildQuestionSet(subject, numberOfQuestions);
+    if (!selectedQuestions.length) {
         return res.status(400).json({ message: `No questions available for subject: ${subject}` });
     }
 
-    // Shuffle and select random questions
-    const shuffled = [...availableQuestions].sort(() => 0.5 - Math.random());
-    const selectedQuestions = shuffled.slice(0, Math.min(numberOfQuestions, availableQuestions.length));
-
-    // Create quiz document
     const quiz = await Quiz.create({
         userId,
         subject,
-        title: `${subject} Quiz - ${new Date().toLocaleDateString()}`,
+        title: `${subject} Practice Test`,
         questions: selectedQuestions,
         totalQuestions: selectedQuestions.length,
+        timeLimit: 60,
+        quizType: 'practice',
+        availableAt: new Date(),
     });
 
-    res.status(201).json({
-        success: true,
-        data: quiz,
-    });
+    res.status(201).json({ success: true, data: quiz });
 });
 
-// @desc    Submit quiz answers
-// @route   PUT /api/quiz/:id/submit
-// @access  Private
 exports.submitQuiz = asyncHandler(async (req, res) => {
-    const { answers } = req.body;
-    const { id } = req.params;
-
-    const quiz = await Quiz.findById(id);
+    const { answers, antiCheatWarnings = 0, fullscreenViolations = 0, tabSwitchViolations = 0 } = req.body;
+    const quiz = await Quiz.findById(req.params.id);
 
     if (!quiz) {
         return res.status(404).json({ message: 'Quiz not found' });
@@ -205,7 +333,10 @@ exports.submitQuiz = asyncHandler(async (req, res) => {
     let correctCount = 0;
     const processedAnswers = answers.map((answer, index) => {
         const isCorrect = answer.selectedAnswer === quiz.questions[index].correctAnswer;
-        if (isCorrect) correctCount++;
+        if (isCorrect) {
+            correctCount++;
+        }
+
         return {
             questionIndex: index,
             selectedAnswer: answer.selectedAnswer,
@@ -214,79 +345,46 @@ exports.submitQuiz = asyncHandler(async (req, res) => {
     });
 
     const percentage = Math.round((correctCount / quiz.totalQuestions) * 100);
-    const isPassed = percentage >= 60;
-
+    const terminated = fullscreenViolations > 0;
     quiz.answers = processedAnswers;
     quiz.score = correctCount;
     quiz.percentage = percentage;
-    quiz.isPassed = isPassed;
+    quiz.isPassed = !terminated && percentage >= 60;
+    quiz.pointsDelta = 0;
+    quiz.antiCheatWarnings = antiCheatWarnings;
+    quiz.fullscreenViolations = fullscreenViolations;
+    quiz.tabSwitchViolations = tabSwitchViolations;
     quiz.status = 'completed';
     quiz.completedAt = new Date();
 
     await quiz.save();
-
-    // If quiz is passed, auto-complete related pending tasks
-    if (isPassed) {
-        const subjectLower = quiz.subject.toLowerCase();
-        await Task.updateMany(
-            {
-                user: quiz.userId,
-                requiredLanguage: subjectLower,
-                completed: false,
-            },
-            {
-                $set: {
-                    completed: true,
-                    completedAt: new Date(),
-                    quizCompleted: true,
-                    quizPassedAt: new Date(),
-                }
-            }
-        );
-    }
+    await appendScoreHistory({ userId: quiz.userId, quiz, task: null, isPractice: true, pointsDelta: 0 });
 
     res.json({
         success: true,
         data: quiz,
-        message: `Quiz completed! Score: ${quiz.score}/${quiz.totalQuestions} (${percentage}%)`,
+        message: terminated
+            ? `Practice test terminated. Score: ${quiz.score}/${quiz.totalQuestions} (${percentage}%).`
+            : `Practice test completed. Score: ${quiz.score}/${quiz.totalQuestions} (${percentage}%).`,
     });
 });
 
-// @desc    Get user's quiz history
-// @route   GET /api/quiz/history
-// @access  Private
 exports.getQuizHistory = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
-    const quizzes = await Quiz.find({ userId }).sort({ createdAt: -1 });
-
-    res.json({
-        success: true,
-        data: quizzes,
-    });
+    const quizzes = await Quiz.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.json({ success: true, data: quizzes });
 });
 
-// @desc    Get single quiz
-// @route   GET /api/quiz/:id
-// @access  Private
 exports.getQuiz = asyncHandler(async (req, res) => {
     const quiz = await Quiz.findById(req.params.id);
-
     if (!quiz) {
         return res.status(404).json({ message: 'Quiz not found' });
     }
 
-    res.json({
-        success: true,
-        data: quiz,
-    });
+    res.json({ success: true, data: quiz });
 });
 
-// @desc    Delete quiz
-// @route   DELETE /api/quiz/:id
-// @access  Private
 exports.deleteQuiz = asyncHandler(async (req, res) => {
     const quiz = await Quiz.findById(req.params.id);
-
     if (!quiz) {
         return res.status(404).json({ message: 'Quiz not found' });
     }
@@ -296,79 +394,52 @@ exports.deleteQuiz = asyncHandler(async (req, res) => {
     }
 
     await Quiz.deleteOne({ _id: req.params.id });
-
-    res.json({
-        success: true,
-        message: 'Quiz deleted',
-    });
+    res.json({ success: true, message: 'Quiz deleted' });
 });
 
-// ==================== TASK-LINKED QUIZ ENDPOINTS ====================
-
-// @desc    Generate quiz linked to a specific task
-// @route   POST /api/quiz/task/:taskId/generate
-// @access  Private
 exports.generateTaskQuiz = asyncHandler(async (req, res) => {
     const { taskId } = req.params;
-    const { numberOfQuestions = 10 } = req.body;
-    const userId = req.user._id;
-
-    // Verify task exists and belongs to user
     const task = await Task.findById(taskId);
+
     if (!task) {
         return res.status(404).json({ message: 'Task not found' });
     }
 
-    if (task.user.toString() !== userId.toString()) {
+    if (task.user.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'Not authorized to access this task' });
     }
 
-    if (!task.requiredLanguage) {
-        return res.status(400).json({ message: 'Task does not have a required language/topic' });
+    if (!task.quizRequired || !task.assignedByStaff || !task.linkedQuizId) {
+        return res.status(400).json({ message: 'No staff-assigned test is available for this task' });
     }
 
-    const availableQuestions = getQuestionsForSubject(task.requiredLanguage);
-
-    if (availableQuestions.length === 0) {
-        return res.status(400).json({ message: `No questions available for topic: ${task.requiredLanguage}` });
+    if (task.taskQuizAvailableAt && new Date() < task.taskQuizAvailableAt) {
+        return res.status(400).json({
+            message: 'The assigned test will be available after the task duration ends.',
+            availableAt: task.taskQuizAvailableAt,
+        });
     }
 
-    // Shuffle and select random questions
-    const shuffled = [...availableQuestions].sort(() => 0.5 - Math.random());
-    const selectedQuestions = shuffled.slice(0, Math.min(numberOfQuestions, availableQuestions.length));
+    const quiz = await Quiz.findById(task.linkedQuizId);
+    if (!quiz) {
+        return res.status(404).json({ message: 'Assigned test not found' });
+    }
 
-    // Create quiz document linked to task
-    const quiz = await Quiz.create({
-        userId,
-        subject: task.requiredLanguage,
-        title: `${task.title} - ${task.requiredLanguage.charAt(0).toUpperCase() + task.requiredLanguage.slice(1)} Quiz`,
-        questions: selectedQuestions,
-        totalQuestions: selectedQuestions.length,
-    });
-
-    // Link quiz to task and mark it as started
-    task.linkedQuizId = quiz._id;
     task.taskQuizStarted = true;
     task.taskQuizStartedAt = new Date();
-    task.quizRequired = true;
     await task.save();
 
     res.status(201).json({
         success: true,
         data: quiz,
-        task: task,
-        message: 'Quiz generated for task. Complete the quiz to mark the task as completed.',
+        task,
+        message: 'Assigned test is ready.',
     });
 });
 
-// @desc    Submit task-linked quiz and auto-complete task if passed
-// @route   PUT /api/quiz/:id/task-submit
-// @access  Private
 exports.submitTaskQuiz = asyncHandler(async (req, res) => {
-    const { answers, taskId } = req.body;
-    const { id } = req.params;
-
-    const quiz = await Quiz.findById(id);
+    const { answers, taskId, antiCheatWarnings = 0, fullscreenViolations = 0, tabSwitchViolations = 0 } = req.body;
+    const quiz = await Quiz.findById(req.params.id);
 
     if (!quiz) {
         return res.status(404).json({ message: 'Quiz not found' });
@@ -378,27 +449,29 @@ exports.submitTaskQuiz = asyncHandler(async (req, res) => {
         return res.status(403).json({ message: 'Not authorized to submit this quiz' });
     }
 
-    // Verify task if taskId provided
-    if (taskId) {
-        const task = await Task.findById(taskId);
-        if (!task) {
-            return res.status(404).json({ message: 'Task not found' });
-        }
+    const task = await Task.findById(taskId);
+    if (!task) {
+        return res.status(404).json({ message: 'Task not found' });
+    }
 
-        if (task.user.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: 'Not authorized to access this task' });
-        }
+    if (task.user.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized to access this task' });
+    }
 
-        // Verify this quiz is linked to this task
-        if (task.linkedQuizId.toString() !== id) {
-            return res.status(400).json({ message: 'Quiz is not linked to this task' });
-        }
+    const taskLinksToQuiz = task.linkedQuizId && task.linkedQuizId.toString() === req.params.id;
+    const quizLinksToTask = quiz.linkedTaskId && quiz.linkedTaskId.toString() === taskId;
+
+    if (!taskLinksToQuiz && !quizLinksToTask) {
+        return res.status(400).json({ message: 'Quiz is not linked to this task' });
     }
 
     let correctCount = 0;
     const processedAnswers = answers.map((answer, index) => {
         const isCorrect = answer.selectedAnswer === quiz.questions[index].correctAnswer;
-        if (isCorrect) correctCount++;
+        if (isCorrect) {
+            correctCount++;
+        }
+
         return {
             questionIndex: index,
             selectedAnswer: answer.selectedAnswer,
@@ -407,59 +480,107 @@ exports.submitTaskQuiz = asyncHandler(async (req, res) => {
     });
 
     const percentage = Math.round((correctCount / quiz.totalQuestions) * 100);
-    const isPassed = percentage >= 60;
+    const terminated = fullscreenViolations > 0;
+    const isPassed = !terminated && percentage >= 60;
+    const pointsDelta = calculatePointsDelta({ isPassed, isPractice: false, task });
 
     quiz.answers = processedAnswers;
     quiz.score = correctCount;
     quiz.percentage = percentage;
     quiz.isPassed = isPassed;
+    quiz.pointsDelta = pointsDelta;
+    quiz.antiCheatWarnings = antiCheatWarnings;
+    quiz.fullscreenViolations = fullscreenViolations;
+    quiz.tabSwitchViolations = tabSwitchViolations;
     quiz.status = 'completed';
     quiz.completedAt = new Date();
 
     await quiz.save();
 
-    let updatedTask = null;
-
-    // If quiz is passed and linked to a task, auto-complete the task
-    if (isPassed && taskId) {
-        updatedTask = await Task.findByIdAndUpdate(
-            taskId,
-            {
-                $set: {
-                    completed: true,
-                    completedAt: new Date(),
-                    quizCompleted: true,
-                    quizPassedAt: new Date(),
-                }
+    const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        {
+            $set: {
+                completed: isPassed,
+                completedAt: isPassed ? new Date() : null,
+                quizCompleted: isPassed,
+                quizPassedAt: isPassed ? new Date() : null,
             },
-            { new: true }
-        );
-    }
+        },
+        { new: true },
+    );
+
+    await appendScoreHistory({
+        userId: quiz.userId,
+        quiz,
+        task,
+        isPractice: false,
+        pointsDelta,
+    });
 
     res.json({
         success: true,
         data: quiz,
         task: updatedTask,
-        message: isPassed 
-            ? `Quiz completed! Score: ${quiz.score}/${quiz.totalQuestions} (${percentage}%). Task marked as completed! 🎉`
-            : `Quiz completed! Score: ${quiz.score}/${quiz.totalQuestions} (${percentage}%). You need 60% to pass. Try again!`,
+        message: terminated
+            ? `Test terminated due to fullscreen exit. Score: ${quiz.score}/${quiz.totalQuestions} (${percentage}%). You can request a retest from staff.`
+            : isPassed
+                ? `Test completed. Score: ${quiz.score}/${quiz.totalQuestions} (${percentage}%). Points increased by ${pointsDelta}.`
+                : `Test completed. Score: ${quiz.score}/${quiz.totalQuestions} (${percentage}%). Points changed by ${pointsDelta}. You can request a retest from staff.`,
     });
 });
 
-// @desc    Get task quiz (gets the linked quiz for a task)
-// @route   GET /api/quiz/task/:taskId
-// @access  Private
+exports.requestRetest = asyncHandler(async (req, res) => {
+    const quiz = await Quiz.findById(req.params.id);
+
+    if (!quiz) {
+        return res.status(404).json({ message: 'Quiz not found' });
+    }
+
+    if (quiz.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized to request a retest for this quiz' });
+    }
+
+    if (quiz.status !== 'completed') {
+        return res.status(400).json({ message: 'Retest can only be requested after the test is completed' });
+    }
+
+    const isEligible = !quiz.isPassed || quiz.fullscreenViolations > 0;
+    if (!isEligible) {
+        return res.status(400).json({ message: 'Retest is only available for failed or terminated tests' });
+    }
+
+    const task = quiz.linkedTaskId ? await Task.findById(quiz.linkedTaskId) : null;
+
+    if (quiz.reTestRequested && quiz.reTestRequestId) {
+        const existingRequest = await ReTestRequest.findById(quiz.reTestRequestId);
+        if (existingRequest?.status === 'pending') {
+            return res.status(400).json({ message: 'A retest request is already pending for this test' });
+        }
+    }
+
+    const reason = quiz.fullscreenViolations > 0
+        ? `Student requested a retest after the test was terminated for fullscreen exit${task ? ` on task: ${task.title}` : ''}`
+        : `Student requested a retest after scoring ${quiz.percentage}%${task ? ` on task: ${task.title}` : ''}`;
+
+    const retestRequest = await createRetestRequestForQuiz({ quiz, task, reason });
+
+    res.status(201).json({
+        success: true,
+        data: retestRequest,
+        message: 'Retest request submitted to staff for approval.',
+    });
+});
+
 exports.getTaskQuiz = asyncHandler(async (req, res) => {
     const { taskId } = req.params;
-    const userId = req.user._id;
+    let task = await Task.findById(taskId);
 
-    // Verify task exists and belongs to user
-    const task = await Task.findById(taskId);
     if (!task) {
         return res.status(404).json({ message: 'Task not found' });
     }
 
-    if (task.user.toString() !== userId.toString()) {
+    if (task.user.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'Not authorized to access this task' });
     }
 
@@ -467,47 +588,52 @@ exports.getTaskQuiz = asyncHandler(async (req, res) => {
         return res.status(404).json({ message: 'No quiz linked to this task' });
     }
 
+    if (task.taskQuizAvailableAt && new Date() < task.taskQuizAvailableAt) {
+        return res.status(400).json({
+            message: 'The assigned test will be available after the task duration ends.',
+            availableAt: task.taskQuizAvailableAt,
+        });
+    }
+
+    task = await ensureApprovedRetakeQuizForTask(task);
+
     const quiz = await Quiz.findById(task.linkedQuizId);
     if (!quiz) {
         return res.status(404).json({ message: 'Quiz not found' });
     }
 
-    res.json({
-        success: true,
-        data: quiz,
-    });
+    res.json({ success: true, data: quiz });
 });
 
-// @desc    Get task info with quiz status
-// @route   GET /api/quiz/task/:taskId/status
-// @access  Private
 exports.getTaskQuizStatus = asyncHandler(async (req, res) => {
     const { taskId } = req.params;
-    const userId = req.user._id;
+    let task = await Task.findById(taskId);
 
-    // Verify task exists and belongs to user
-    const task = await Task.findById(taskId);
     if (!task) {
         return res.status(404).json({ message: 'Task not found' });
     }
 
-    if (task.user.toString() !== userId.toString()) {
+    if (task.user.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'Not authorized to access this task' });
     }
 
-    const quizStatus = {
-        taskId: task._id,
-        taskTitle: task.title,
-        requiredLanguage: task.requiredLanguage,
-        taskCompleted: task.completed,
-        quizRequired: task.quizRequired || false,
-        quizStarted: task.taskQuizStarted || false,
-        quizCompleted: task.quizCompleted || false,
-        linkedQuizId: task.linkedQuizId || null,
-    };
+    task = await ensureApprovedRetakeQuizForTask(task);
 
     res.json({
         success: true,
-        data: quizStatus,
+        data: {
+            taskId: task._id,
+            taskTitle: task.title,
+            requiredLanguage: task.requiredLanguage,
+            taskCompleted: task.completed,
+            quizRequired: task.quizRequired || false,
+            quizStarted: task.taskQuizStarted || false,
+            quizCompleted: task.quizCompleted || false,
+            linkedQuizId: task.linkedQuizId || null,
+            assignedByStaff: task.assignedByStaff || false,
+            availableAt: task.taskQuizAvailableAt || null,
+            plannedDurationMinutes: task.plannedDurationMinutes || 0,
+            canStart: Boolean(task.linkedQuizId) && (!task.taskQuizAvailableAt || new Date() >= task.taskQuizAvailableAt),
+        },
     });
 });

@@ -26,9 +26,49 @@ export default function Register() {
         <div className="auth-bg">
             <div className="auth-card">
                 <div className="auth-logo">
-                    <img src={personalLogo} alt="FocusFlow" />
+                    <img src={personalLogo} alt="digital focus" />
                 </div>
                 <p className="auth-subtitle">Create your account</p>
+
+                {/* Role Selection */}
+                <div className="role-selector" style={{ marginBottom: '24px', display: 'flex', gap: '12px' }}>
+                    <button
+                        type="button"
+                        onClick={() => setForm({ ...form, role: 'student' })}
+                        className={`role-btn ${form.role === 'student' ? 'active' : ''}`}
+                        style={{
+                            flex: 1,
+                            padding: '12px',
+                            border: form.role === 'student' ? '2px solid #3b82f6' : '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            background: form.role === 'student' ? '#eff6ff' : 'white',
+                            cursor: 'pointer',
+                            fontWeight: form.role === 'student' ? '600' : '500',
+                            color: form.role === 'student' ? '#3b82f6' : '#6b7280',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        👨‍🎓 Student
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setForm({ ...form, role: 'admin' })}
+                        className={`role-btn ${form.role === 'admin' ? 'active' : ''}`}
+                        style={{
+                            flex: 1,
+                            padding: '12px',
+                            border: form.role === 'admin' ? '2px solid #ef4444' : '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            background: form.role === 'admin' ? '#fef2f2' : 'white',
+                            cursor: 'pointer',
+                            fontWeight: form.role === 'admin' ? '600' : '500',
+                            color: form.role === 'admin' ? '#ef4444' : '#6b7280',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        🛡️ Admin
+                    </button>
+                </div>
 
                 <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">

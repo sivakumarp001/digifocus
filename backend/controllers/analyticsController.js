@@ -100,29 +100,39 @@ const getMonthlyAnalytics = async (req, res, next) => {
             const end = new Date(start);
             end.setDate(end.getDate() + 6);
 
-            const sessions = await FocusSession.find({
-                user: req.user._id, mode: 'work', completed: true,
-                startTime: { $gte: start, $lte: end },
-            });
+            const [sessions, tasksAssigned, tasksCompleted, quizzes] = await Promise.all([
+                FocusSession.find({
+                    user: req.user._id, mode: 'work', completed: true,
+                    startTime: { $gte: start, $lte: end },
+                }),
+                Task.find({
+                    user: req.user._id,
+                    createdAt: { $gte: start, $lte: end },
+                }),
+                Task.find({
+                    user: req.user._id, completed: true,
+                    completedAt: { $gte: start, $lte: end },
+                }),
+                Quiz.find({
+                    userId: req.user._id, status: 'completed',
+                    completedAt: { $gte: start, $lte: end },
+                }),
+            ]);
+
             const focusHours = sessions.reduce((a, s) => a + s.duration, 0) / 60;
-
-            const tasks = await Task.find({
-                user: req.user._id, completed: true,
-                completedAt: { $gte: start, $lte: end },
-            });
-
-            const quizzes = await Quiz.find({
-                userId: req.user._id, status: 'completed',
-                completedAt: { $gte: start, $lte: end },
-            });
             const passedQuizzes = quizzes.filter(q => q.isPassed).length;
+            const avgScore = quizzes.length
+                ? Math.round((quizzes.reduce((sum, q) => sum + (q.score || 0), 0) / quizzes.length) * 10) / 10
+                : 0;
 
             return {
                 week: `Week ${week}`,
                 focusHours: Math.round(focusHours * 10) / 10,
-                tasks: tasks.length,
+                tasksAssigned: tasksAssigned.length,
+                tasksCompleted: tasksCompleted.length,
                 quizzes: quizzes.length,
                 quizzesPassed: passedQuizzes,
+                avgScore,
             };
         }));
 

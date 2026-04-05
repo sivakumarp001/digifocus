@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { quizAPI } from '../api/index';
 import './Quiz.css';
@@ -12,9 +11,8 @@ export default function Quiz() {
     const [quizHistory, setQuizHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
     const navigate = useNavigate();
-    const { user } = useAuth();
 
-    const suggestedSubjects = ['Mathematics', 'Science', 'History', 'English', 'Aptitude', 'Java', 'Python', 'C', 'HTML', 'CSS'];
+    const suggestedSubjects = ['Mathematics', 'Science', 'History', 'English', 'Aptitude', 'Java', 'Python', 'C', 'C++', 'React', 'HTML', 'CSS'];
 
     const handleGenerateQuiz = async (e) => {
         e.preventDefault();
@@ -32,8 +30,8 @@ export default function Quiz() {
 
             toast.success('Quiz generated! Starting now...');
             navigate(`/quiz/${response.data.data._id}/test`);
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to generate quiz');
+        } catch (_error) {
+            toast.error(_error.response?.data?.message || 'Failed to generate quiz');
         } finally {
             setLoading(false);
         }
@@ -44,7 +42,7 @@ export default function Quiz() {
             const response = await quizAPI.getHistory();
             setQuizHistory(response.data.data);
             setShowHistory(!showHistory);
-        } catch (error) {
+        } catch {
             toast.error('Failed to load quiz history');
         }
     };
@@ -70,7 +68,7 @@ export default function Quiz() {
                         <label>Enter Subject</label>
                         <input
                             type="text"
-                            placeholder="e.g., Java, Python, Aptitude, C++, CSS, Biology..."
+                            placeholder="e.g., Java, Python, Aptitude, C++, React, CSS, Biology..."
                             value={subject}
                             onChange={(e) => setSubject(e.target.value)}
                             className="input"

@@ -10,10 +10,10 @@ import './Dashboard.css';
 
 export default function Dashboard() {
     const { user } = useAuth();
-    const { isRunning, mode, timeLeft, startTimer, pauseTimer, completedSessions } = useTimer();
+    const { isRunning, mode, timeLeft, startTimer, pauseTimer } = useTimer();
     const navigate = useNavigate();
     const [summary, setSummary] = useState(null);
-    const [weeklyData, setWeeklyData] = useState(null);
+    const [weeklyData, setWeeklyData] = useState([]);
     const [todayTasks, setTodayTasks] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -28,8 +28,12 @@ export default function Dashboard() {
                     tasksAPI.getToday(),
                 ]);
                 setSummary(sumRes.data.summary);
-                const { labels, focusHours, tasksCompleted } = weekRes.data;
-                setWeeklyData(labels.map((l, i) => ({ day: l, focus: focusHours[i], tasks: tasksCompleted[i] })));
+                const { labels = [], focusHours = [], tasksCompleted = [] } = weekRes.data;
+                setWeeklyData(labels.map((label, index) => ({
+                    day: label,
+                    focus: Number(focusHours[index] || 0),
+                    tasks: Number(tasksCompleted[index] || 0),
+                })));
                 setTodayTasks(taskRes.data.tasks.slice(0, 5));
             } catch {
                 toast.error('Failed to load dashboard data');
@@ -41,6 +45,10 @@ export default function Dashboard() {
     const toggleTimer = () => isRunning ? pauseTimer() : startTimer();
 
     const scoreColor = (s) => s >= 70 ? 'var(--success)' : s >= 40 ? 'var(--warning)' : 'var(--danger)';
+    const hasWeeklyFocusData = weeklyData.some((item) => item.focus > 0);
+    const todayAssigned = todayTasks.length;
+    const todayDone = todayTasks.filter((t) => t.completed).length;
+    const todayPoints = todayTasks.reduce((sum, t) => sum + (Number(t.points) || 0), 0);
 
     if (loading) return <div className="loading-wrapper"><div className="spinner" /></div>;
 
@@ -73,10 +81,9 @@ export default function Dashboard() {
             {/* Stats Row */}
             <div className="grid-4">
                 {[
-                    { icon: '✅', label: 'Tasks Done', value: summary?.completedTasks || 0, sub: `of ${summary?.totalTasks || 0} total`, color: '#22c55e' },
-                    { icon: '⏱️', label: 'Focus Today', value: `${summary?.todayFocusHours || 0}h`, sub: `${summary?.todayFocusMinutes || 0} minutes`, color: '#6c63ff' },
-                    { icon: '🧠', label: 'Sessions', value: completedSessions, sub: 'completed today', color: '#3b82f6' },
-                    { icon: '⚡', label: 'Distractions', value: summary?.todayDistractions || 0, sub: 'logged today', color: '#f59e0b' },
+                    { icon: '📌', label: 'Tasks Assigned Today', value: todayAssigned, sub: 'due today', color: '#6c63ff' },
+                    { icon: '✅', label: 'Tasks Done Today', value: todayDone, sub: `${todayAssigned} assigned`, color: '#22c55e' },
+                    { icon: '🏅', label: 'Points Earned Today', value: todayPoints, sub: 'from tasks', color: '#f59e0b' },
                 ].map((s) => (
                     <div key={s.label} className="stat-card">
                         <div className="stat-icon" style={{ background: `${s.color}20` }}>{s.icon}</div>
@@ -118,7 +125,7 @@ export default function Dashboard() {
                                 <span className={`dash-task-dot priority-${task.priority}`} />
                                 <div style={{ flex: 1 }}>
                                     <span className="dash-task-title">{task.title}</span>
-                                    {task.requiredLanguage && !task.quizCompleted && (
+                                    {task.quizRequired && task.requiredLanguage && !task.quizCompleted && (
                                         <div style={{ fontSize: '12px', color: 'var(--warning)', marginTop: '4px' }}>
                                             📚 Requires {task.requiredLanguage.charAt(0).toUpperCase() + task.requiredLanguage.slice(1)} quiz
                                         </div>
@@ -133,45 +140,25 @@ export default function Dashboard() {
                 {/* Weekly Chart */}
                 <div className="card weekly-chart-card">
                     <h3>📈 Weekly Focus Hours</h3>
-                    <ResponsiveContainer width="100%" height={180}>
-                        <BarChart data={weeklyData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                            <XAxis dataKey="day" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
-                            <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
-                            <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }} />
-                            <Bar dataKey="focus" fill="var(--accent)" radius={[4, 4, 0, 0]} name="Focus hrs" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Completion Rate */}
-                <div className="card">
-                    <h3 style={{ marginBottom: 20 }}>🎯 Task Completion</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Overall Rate</span>
-                                <span style={{ fontWeight: 700 }}>{summary?.completionRate || 0}%</span>
-                            </div>
-                            <div className="progress-bar">
-                                <div className="progress-fill" style={{ width: `${summary?.completionRate || 0}%` }} />
-                            </div>
+                    {hasWeeklyFocusData ? (
+                        <ResponsiveContainer width="100%" height={180}>
+                            <BarChart data={weeklyData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                                <XAxis dataKey="day" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                                <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                                <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }} />
+                                <Bar dataKey="focus" fill="#5a52f0" radius={[8, 8, 0, 0]} name="Focus hrs" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="weekly-chart-empty">
+                            <div className="weekly-chart-empty-title">No focus hours recorded this week yet</div>
+                            <p>Complete a focus session and your weekly graph will appear here.</p>
                         </div>
-                        <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Total Focus Time</span>
-                                <span style={{ fontWeight: 700 }}>{Math.round((summary?.totalFocusMinutes || 0) / 60)}h</span>
-                            </div>
-                            <div className="progress-bar">
-                                <div className="progress-fill success" style={{ width: `${Math.min((summary?.totalFocusMinutes || 0) / 6, 100)}%` }} />
-                            </div>
-                        </div>
-                        <div style={{ marginTop: 8, padding: '16px', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)' }}>
-                            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>🔥 {summary?.streak || 0} day streak — keep studying every day!</p>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
+
