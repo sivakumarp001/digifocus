@@ -55,8 +55,8 @@ app.use('/api/daily-tasks', require('./routes/dailyTaskRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK', time: new Date() }));
-app.get('/api', (req, res) => res.send('API is running...'));
-app.get('/', (req, res) => res.send('API is running...'));
+app.get('/api', (req, res) => res.json({ message: '✅ API is running...', version: '1.0.0' }));
+app.get('/', (req, res) => res.json({ message: '✅ DigiFocus API is running!', docs: '/api/health' }));
 
 // Error handling
 app.use(notFound);
