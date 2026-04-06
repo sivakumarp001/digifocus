@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../api';
 
 const AuthContext = createContext();
@@ -10,7 +10,12 @@ export const AuthProvider = ({ children }) => {
         return stored ? JSON.parse(stored) : null;
     });
     const [token, setToken] = useState(() => localStorage.getItem('token'));
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    // Mark auth as loaded after initial render
+    useEffect(() => {
+        setLoading(false);
+    }, []);
 
     const login = async (credentials) => {
         setLoading(true);
