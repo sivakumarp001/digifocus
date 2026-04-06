@@ -5,16 +5,43 @@ import { authAPI } from '../api';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(() => {
-        const stored = localStorage.getItem('user');
-        return stored ? JSON.parse(stored) : null;
-    });
-    const [token, setToken] = useState(() => localStorage.getItem('token'));
+    const [user, setUser] = useState(null);
+    const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Mark auth as loaded after initial render
+    // Verify token and load user on app startup
     useEffect(() => {
-        setLoading(false);
+        const verifyAuth = async () => {
+            try {
+                const storedToken = localStorage.getItem('token');
+                const storedUser = localStorage.getItem('user');
+
+                if (storedToken && storedUser) {
+                    // Verify token is still valid by making an API call
+                    const { data } = await authAPI.getMe();
+                    localStorage.setItem('user', JSON.stringify(data));
+                    setToken(storedToken);
+                    setUser(data);
+                } else {
+                    // No stored auth, clear everything
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setToken(null);
+                    setUser(null);
+                }
+            } catch (err) {
+                // Token is invalid or expired, clear auth
+                console.error('Auth verification failed:', err.message);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setToken(null);
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        verifyAuth();
     }, []);
 
     const login = async (credentials) => {

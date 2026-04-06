@@ -16,25 +16,52 @@ import StudyTimer from './pages/StudyTimer';
 import AdminPanel from './pages/AdminPanel';
 import TodaysTasks from './pages/TodaysTasks';
 
+const LoadingScreen = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh', 
+    backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-primary)'
+  }}>
+    <div className="spinner" style={{ width: '40px', height: '40px' }} />
+  </div>
+);
+
 const PrivateRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'var(--text-primary)' }}>Loading...</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  const { user, loading, token } = useAuth();
+  
+  if (loading) return <LoadingScreen />;
+  
+  // No user and no token means not authenticated
+  if (!user || !token) return <Navigate to="/login" replace />;
+  
   return children;
 };
 
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'var(--text-primary)' }}>Loading...</div>;
+  
+  if (loading) return <LoadingScreen />;
+  
+  // If user is already logged in, redirect to dashboard
   if (user) return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} replace />;
+  
   return children;
 };
 
 const AdminRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', color: 'var(--text-primary)' }}>Loading...</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  const { user, loading, token } = useAuth();
+  
+  if (loading) return <LoadingScreen />;
+  
+  // Not authenticated
+  if (!user || !token) return <Navigate to="/login" replace />;
+  
+  // Not an admin
   if (user.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  
   return children;
 };
 
