@@ -5,18 +5,30 @@
 Create a `.env` file in the backend root with:
 
 ```
-MONGODB_URI=your_mongodb_connection_string
+MONGODB_URI=mongodb+srv://sivakumarpsk001_db_user:dLSKJNFncm9KHd1C@cluster.mongodb.net/digifocus
 JWT_SECRET=your_super_secret_jwt_key
 PORT=3001
 NODE_ENV=development
 ```
 
-## Vercel Environment Setup
+## MongoDB Setup
 
-Add these to your Vercel project settings:
+Your MongoDB cluster is configured with:
+- **Username**: `sivakumarpsk001_db_user`
+- **Database**: `digifocus`
+- **Connection String**: `mongodb+srv://sivakumarpsk001_db_user:dLSKJNFncm9KHd1C@cluster.mongodb.net/digifocus`
 
-1. **MONGODB_URI** - MongoDB connection string
-2. **JWT_SECRET** - Secret key for JWT tokens
+### Local Development
+1. Copy `.env.example` to `.env`
+2. Update `JWT_SECRET` if needed
+3. Run `npm install`
+4. Run `npm run dev` to start development server
+
+### Production (Vercel)
+Add these environment variables in Vercel project settings:
+
+1. **MONGODB_URI** - `mongodb+srv://sivakumarpsk001_db_user:dLSKJNFncm9KHd1C@cluster.mongodb.net/digifocus`
+2. **JWT_SECRET** - Use a strong secret (e.g., generate from: https://generate-secret.vercel.app/)
 3. **NODE_ENV** - Set to `production`
 
 ## API Endpoints

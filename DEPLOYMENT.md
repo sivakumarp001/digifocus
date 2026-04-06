@@ -83,10 +83,9 @@
 5. **Environment Variables**
    - Add in Vercel Project Settings → Environment Variables
    ```
-   MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/digifocus
-   JWT_SECRET=your_super_secret_jwt_key_here
+   MONGODB_URI=mongodb+srv://sivakumarpsk001_db_user:dLSKJNFncm9KHd1C@cluster.mongodb.net/digifocus
+   JWT_SECRET=generate_a_strong_secret_here
    NODE_ENV=production
-   PORT=3001
    ```
 
 6. **Deploy**
