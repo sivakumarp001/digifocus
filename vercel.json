@@ -1,13 +1,17 @@
 {
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/dist",
-  "env": {
-    "VITE_API_URL": "https://digitalfocus-backend.vercel.app"
-  },
-  "rewrites": [
+  "comment": "This is a monorepo. Deploy frontend and backend separately.",
+  "projects": [
     {
-      "source": "/((?!assets/).*)",
-      "destination": "/index.html"
+      "name": "digifocus-frontend",
+      "path": "frontend",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist"
+    },
+    {
+      "name": "digifocus-backend",
+      "path": "backend-template",
+      "buildCommand": "npm install",
+      "outputDirectory": ""
     }
   ]
 }

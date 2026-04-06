@@ -1,4 +1,9 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "env": {
+    "VITE_API_URL": "https://digitalfocus-backend.vercel.app"
+  },
   "rewrites": [
     {
       "source": "/((?!assets/|public/|personal-logo.svg|vite.svg|favicon.ico).*)",
