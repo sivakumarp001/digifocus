@@ -39,13 +39,15 @@ export default function Login() {
                         style={{
                             flex: 1,
                             padding: '12px',
-                            border: selectedRole === 'student' ? '2px solid #3b82f6' : '2px solid #e5e7eb',
-                            borderRadius: '8px',
-                            background: selectedRole === 'student' ? '#eff6ff' : 'white',
+                            border: selectedRole === 'student' ? '2px solid rgba(255,255,255,0.8)' : '1px solid rgba(255,255,255,0.2)',
+                            borderRadius: '12px',
+                            background: selectedRole === 'student' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
                             cursor: 'pointer',
-                            fontWeight: selectedRole === 'student' ? '600' : '500',
-                            color: selectedRole === 'student' ? '#3b82f6' : '#6b7280',
-                            transition: 'all 0.2s'
+                            fontWeight: selectedRole === 'student' ? '700' : '500',
+                            color: 'white',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            transform: selectedRole === 'student' ? 'scale(1.02)' : 'scale(1)',
+                            boxShadow: selectedRole === 'student' ? '0 10px 20px rgba(0,0,0,0.2)' : 'none'
                         }}
                     >
                         👨‍🎓 Student
@@ -57,13 +59,15 @@ export default function Login() {
                         style={{
                             flex: 1,
                             padding: '12px',
-                            border: selectedRole === 'admin' ? '2px solid #ef4444' : '2px solid #e5e7eb',
-                            borderRadius: '8px',
-                            background: selectedRole === 'admin' ? '#fef2f2' : 'white',
+                            border: selectedRole === 'admin' ? '2px solid rgb(101 220 107 / 97%)' : '1px solid rgba(255,255,255,0.2)',
+                            borderRadius: '12px',
+                            background: selectedRole === 'admin' ? 'rgba(101, 220, 107, 0.15)' : 'rgba(0,0,0,0.1)',
                             cursor: 'pointer',
-                            fontWeight: selectedRole === 'admin' ? '600' : '500',
-                            color: selectedRole === 'admin' ? '#ef4444' : '#6b7280',
-                            transition: 'all 0.2s'
+                            fontWeight: selectedRole === 'admin' ? '700' : '500',
+                            color: selectedRole === 'admin' ? 'white' : 'white',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            transform: selectedRole === 'admin' ? 'scale(1.02)' : 'scale(1)',
+                            boxShadow: selectedRole === 'admin' ? '0 10px 20px rgba(101,220,107,0.2)' : 'none'
                         }}
                     >
                         🛡️ Admin
@@ -81,7 +85,7 @@ export default function Login() {
                         <input className="input" type="password" placeholder="••••••••" required
                             value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
                     </div>
-                    <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
+                    <button type="submit" className="btn btn-vibrant btn-lg" style={{ width: '100%' }} disabled={loading}>
                         {loading ? 'Signing in...' : `Sign In as ${selectedRole === 'admin' ? 'Admin' : 'Student'}`}
                     </button>
                 </form>

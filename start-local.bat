@@ -1,0 +1,6 @@
+@echo off
+echo Starting Digital Focus Backend...
+start cmd /k "cd backend && npm run dev"
+
+echo Starting Digital Focus Frontend...
+start cmd /k "cd frontend && npm run dev"
