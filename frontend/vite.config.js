@@ -1,13 +1,18 @@
 import { defineConfig } from 'vite'
 
-// Relative base ensures built CSS/JS resolve when the app is served from a
-// subfolder (common in monorepo deployments). Harmless in local dev.
+// For Vercel deployment - use relative paths
 export default defineConfig({
-  base: './',
+  base: '',
   css: {
     transformer: 'postcss'
   },
   build: {
-    cssMinify: false // KEEP: intentional to avoid minification issues
+    cssMinify: false, // KEEP: intentional to avoid minification issues
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      }
+    }
   }
 })
