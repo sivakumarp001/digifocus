@@ -17,11 +17,24 @@ export const AuthProvider = ({ children }) => {
                 const storedUser = localStorage.getItem('user');
 
                 if (storedToken && storedUser) {
-                    // Verify token is still valid by making an API call
-                    const { data } = await authAPI.getMe();
-                    localStorage.setItem('user', JSON.stringify(data));
-                    setToken(storedToken);
-                    setUser(data);
+                    // Verify token is still valid by making an API call with timeout
+                    const timeout = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Verification timeout')), 5000)
+                    );
+                    
+                    const verification = authAPI.getMe();
+                    
+                    try {
+                        const { data } = await Promise.race([verification, timeout]);
+                        localStorage.setItem('user', JSON.stringify(data));
+                        setToken(storedToken);
+                        setUser(data);
+                    } catch (verifyErr) {
+                        // If verification fails, still allow user to stay logged in with stored data
+                        console.warn('Auth verification failed, using cached user:', verifyErr.message);
+                        setToken(storedToken);
+                        setUser(JSON.parse(storedUser));
+                    }
                 } else {
                     // No stored auth, clear everything
                     localStorage.removeItem('token');

@@ -1,6 +1,9 @@
 {
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
+  "env": {
+    "VITE_API_URL": "https://digitalfocus-backend.vercel.app"
+  },
   "rewrites": [
     {
       "source": "/((?!assets/).*)",
